@@ -264,7 +264,7 @@ function gameLogic() {
   if (clicked) return;
   clicked = true;
   text.text = `DROP!`;
-  introCanvas.requestFullscreen();
+  if (introCanvas.requestFullscreen) introCanvas.requestFullscreen();
   introCanvas.width = window.innerWidth;
   introCanvas.height = window.innerHeight;
 
