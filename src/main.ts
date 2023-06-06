@@ -266,8 +266,8 @@ function gameLogic() {
   text.text = `DROP!`;
   if (introCanvas.requestFullscreen) {
     introCanvas.requestFullscreen();
-    introCanvas.width = window.innerWidth;
-    introCanvas.height = window.innerHeight;
+    // introCanvas.width = window.innerWidth;
+    // introCanvas.height = window.innerHeight;
   }
 
   dropContainer.innerHTML = `<canvas class="canvas" id="canvasA"></canvas>
@@ -279,7 +279,7 @@ function gameLogic() {
   gsap
     .to(introStage, {
       pixi: {
-        x: window.innerWidth + 100,
+        x: window.innerWidth + 1000,
       },
       duration: 10,
       ease: 'expo.in',

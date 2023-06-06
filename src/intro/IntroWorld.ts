@@ -114,8 +114,8 @@ export default class IntroWorld {
       setTimeout(() => {
         // this.app.stage.width = window.innerWidth;
         // this.app.stage.height = window.innerHeight;
-        backgroundSprite.width = this.app.screen.width;
-        backgroundSprite.height = this.app.screen.height;
+        backgroundSprite.width = this.app.screen.height * 1.5;
+        backgroundSprite.height = this.app.screen.height * 1.5;
         backgroundSprite.x = window.innerWidth / 2;
         backgroundSprite.y = window.innerHeight / 2;
       }, 100);
