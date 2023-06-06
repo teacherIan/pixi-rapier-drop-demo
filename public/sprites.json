@@ -1,0 +1,55 @@
+{"frames": {
+
+"Orb_05.png":
+{
+	"frame": {"x":0,"y":0,"w":175,"h":180},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":175,"h":180},
+	"sourceSize": {"w":175,"h":180}
+},
+"Orb_08.png":
+{
+	"frame": {"x":175,"y":0,"w":175,"h":180},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":175,"h":180},
+	"sourceSize": {"w":175,"h":180}
+},
+"Orb_09.png":
+{
+	"frame": {"x":350,"y":0,"w":175,"h":180},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":175,"h":180},
+	"sourceSize": {"w":175,"h":180}
+},
+"Orb_11.png":
+{
+	"frame": {"x":525,"y":0,"w":175,"h":180},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":175,"h":180},
+	"sourceSize": {"w":175,"h":180}
+},
+"Orb_20.png":
+{
+	"frame": {"x":700,"y":0,"w":175,"h":180},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":175,"h":180},
+	"sourceSize": {"w":175,"h":180}
+}},
+"animations": {
+	"Orb": ["Orb_05.png","Orb_08.png","Orb_09.png","Orb_11.png","Orb_20.png"]
+},
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.1",
+	"image": "sprites.png",
+	"format": "RGBA8888",
+	"size": {"w":875,"h":180},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:57bb1a93d1b825c972e914ec62ddb3bb:cf3793260b0e53da06080617e21fcaff:1eabdf11f75e3a4fe3147baf7b5be24b$"
+}
+}
