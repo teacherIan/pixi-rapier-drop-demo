@@ -264,9 +264,11 @@ function gameLogic() {
   if (clicked) return;
   clicked = true;
   text.text = `DROP!`;
-  if (introCanvas.requestFullscreen) introCanvas.requestFullscreen();
-  introCanvas.width = window.innerWidth;
-  introCanvas.height = window.innerHeight;
+  if (introCanvas.requestFullscreen) {
+    introCanvas.requestFullscreen();
+    introCanvas.width = window.innerWidth;
+    introCanvas.height = window.innerHeight;
+  }
 
   dropContainer.innerHTML = `<canvas class="canvas" id="canvasA"></canvas>
 <canvas class="canvas" id="canvasB"></canvas>
