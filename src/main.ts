@@ -51,31 +51,6 @@ let textures;
 let gameSpeed = 150;
 let audio: HTMLAudioElement = new Audio('/epic-cinematic-trailer-113981.mp3');
 
-async function getPracticeData() {
-  text.text = 'START';
-  rubyMaxAmountDB = 200;
-  amberMaxAmountDB = 240;
-  pearlMaxAmountDB = 280;
-  sapphireMaxAmountDB = 320;
-
-  winningAmount = Math.max(
-    rubyMaxAmountDB,
-    amberMaxAmountDB,
-    pearlMaxAmountDB,
-    sapphireMaxAmountDB
-  );
-  if (winningAmount === rubyMaxAmountDB) {
-    winningHouse = 'Ruby';
-  } else if (winningAmount === amberMaxAmountDB) {
-    winningHouse = 'Amber';
-  } else if (winningAmount === pearlMaxAmountDB) {
-    winningHouse = 'Pearl';
-  } else if (winningAmount === sapphireMaxAmountDB) {
-    winningHouse = 'Sapphire';
-  }
-  setSettings(winningAmount);
-}
-
 async function getRandomData() {
   text.text = 'START';
   rubyMaxAmountDB = Math.floor(Math.random() * 3000) + 1000;
@@ -99,51 +74,6 @@ async function getRandomData() {
     winningHouse = 'Sapphire';
   }
   setSettings(winningAmount);
-}
-
-async function getData() {
-  let querySnapshot = await getDocs(collection(db, 'points'));
-
-  querySnapshot.forEach((doc) => {
-    if (doc.data().house === 'Ruby') {
-      rubyMaxAmountDB += parseInt(doc.data().points);
-    } else if (doc.data().house === 'Amber') {
-      amberMaxAmountDB += parseInt(doc.data().points);
-    } else if (doc.data().house === 'Pearl') {
-      pearlMaxAmountDB += parseInt(doc.data().points);
-    } else if (doc.data().house === 'Sapphire') {
-      sapphireMaxAmountDB += parseInt(doc.data().points);
-    }
-    total += parseInt(doc.data().points);
-  });
-
-  winningAmount = Math.max(
-    rubyMaxAmountDB,
-    amberMaxAmountDB,
-    pearlMaxAmountDB,
-    sapphireMaxAmountDB
-  );
-  if (winningAmount === rubyMaxAmountDB) {
-    winningHouse = 'Ruby';
-  } else if (winningAmount === amberMaxAmountDB) {
-    winningHouse = 'Amber';
-  } else if (winningAmount === pearlMaxAmountDB) {
-    winningHouse = 'Pearl';
-  } else if (winningAmount === sapphireMaxAmountDB) {
-    winningHouse = 'Sapphire';
-  }
-  setSettings(winningAmount);
-
-  //update text depending on if a connection to the database was established
-  return new Promise((resolve, reject) => {
-    if (querySnapshot.empty) {
-      text.text = 'DB Error';
-      reject('Not loaded');
-    } else {
-      text.text = 'START';
-      resolve('data loaded');
-    }
-  });
 }
 
 function startGame() {
@@ -421,17 +351,26 @@ Experience
 */
 
 //start intro scene after fonts are loaded
-loader()
-  .then(() => {
-    startIntroScene();
-  })
-  .then(() => {
-    getRandomData()
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.innerWidth < 1400) {
+    const div = document.createElement('div');
+    div.className = 'smallScreen';
+    div.innerHTML = 'Sorry, Screen Size Too Small';
+    document.body.appendChild(div);
+  } else {
+    loader()
       .then(() => {
-        startGame();
+        startIntroScene();
       })
-      .catch((err) => {
-        console.log(err);
+      .then(() => {
+        getRandomData()
+          .then(() => {
+            startGame();
+          })
+          .catch((err) => {
+            console.log(err);
+          });
       });
-  });
+  }
+});
 //allows game to start after data is loaded.  Promise is rejected

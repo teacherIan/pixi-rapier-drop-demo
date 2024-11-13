@@ -47,3 +47,13 @@
   z-index: 9999;
   display: none
 }
+
+.smallScreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 99999;
+  width: 100vw;
+  height: 100vh;
+  color: '#00ff00'
+}
