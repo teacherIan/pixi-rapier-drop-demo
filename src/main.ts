@@ -295,7 +295,7 @@ function gameLogic() {
       let timeline = gsap.timeline();
       timeline.to(ruby.App.titleText, {
         pixi: {
-          scaleY: 1.3,
+          scaleY: window.innerWidth < 1000 ? 1 : 1.3,
           scaleX:
             window.innerWidth < 1600
               ? window.innerWidth < 1000
@@ -308,7 +308,7 @@ function gameLogic() {
       });
       timeline.to(amber.App.titleText, {
         pixi: {
-          scaleY: 1.3,
+          scaleY: window.innerWidth < 1000 ? 1 : 1.3,
           scaleX:
             window.innerWidth < 1600
               ? window.innerWidth < 1000
@@ -322,7 +322,7 @@ function gameLogic() {
 
       timeline.to(pearl.App.titleText, {
         pixi: {
-          scaleY: 1.3,
+          scaleY: window.innerWidth < 1000 ? 1 : 1.3,
           scaleX:
             window.innerWidth < 1600
               ? window.innerWidth < 1000
@@ -336,7 +336,7 @@ function gameLogic() {
 
       timeline.to(sapphire.App.titleText, {
         pixi: {
-          scaleY: 1.3,
+          scaleY: window.innerWidth < 1000 ? 1 : 1.3,
           scaleX:
             window.innerWidth < 1600
               ? window.innerWidth < 1000
