@@ -52,7 +52,7 @@ let gameSpeed = 150;
 let audio: HTMLAudioElement = new Audio('/epic-cinematic-trailer-113981.mp3');
 
 async function getRandomData() {
-  const smallScreen = window.innerWidth < 1000 ? -500 : 0;
+  const smallScreen = window.innerWidth < 1000 ? -250 : 0;
   text.text = 'START';
   rubyMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
   amberMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
@@ -193,7 +193,7 @@ function setSettings(max: number) {
     ballSize -= 0.005;
   }
   if (window.innerWidth < 1000) {
-    ballSize -= 0.018;
+    ballSize -= 0.019;
   }
 }
 
