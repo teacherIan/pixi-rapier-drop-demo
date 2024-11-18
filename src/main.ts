@@ -52,11 +52,12 @@ let gameSpeed = 150;
 let audio: HTMLAudioElement = new Audio('/epic-cinematic-trailer-113981.mp3');
 
 async function getRandomData() {
+  const smallScreen = window.innerWidth < 1000 ? -500 : 0;
   text.text = 'START';
-  rubyMaxAmountDB = Math.floor(Math.random() * 3000) + 1000;
-  amberMaxAmountDB = Math.floor(Math.random() * 3000) + 1000;
-  pearlMaxAmountDB = Math.floor(Math.random() * 3000) + 1000;
-  sapphireMaxAmountDB = Math.floor(Math.random() * 3000) + 1000;
+  rubyMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
+  amberMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
+  pearlMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
+  sapphireMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
 
   winningAmount = Math.max(
     rubyMaxAmountDB,
