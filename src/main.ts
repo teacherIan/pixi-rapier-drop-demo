@@ -168,24 +168,26 @@ function setSettings(max: number) {
     maxMultiplier = 3;
     ballSize = 0.065;
   }
+  const smallScreenDiff = window.innerWidth < 1000 ? -1 : 0;
+
   if (max > 2600) {
     gameSpeed = 20;
-    maxMultiplier = 4;
+    maxMultiplier = 4 + smallScreenDiff;
     ballSize = 0.05;
   }
   if (max > 4000) {
     gameSpeed = 16;
-    maxMultiplier = 4;
+    maxMultiplier = 4 + smallScreenDiff;
     ballSize = 0.04;
   }
   if (max > 5000) {
     gameSpeed = 16;
-    maxMultiplier = 4;
+    maxMultiplier = 4 + smallScreenDiff;
     ballSize = 0.03;
   }
   if (max > 6000) {
     gameSpeed = 5;
-    maxMultiplier = 5;
+    maxMultiplier = 5 + smallScreenDiff;
     ballSize = 0.02;
   }
 
@@ -193,7 +195,7 @@ function setSettings(max: number) {
     ballSize -= 0.005;
   }
   if (window.innerWidth < 1000) {
-    ballSize -= 0.0195;
+    ballSize -= 0.019;
   }
 }
 
