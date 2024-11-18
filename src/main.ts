@@ -193,7 +193,7 @@ function setSettings(max: number) {
     ballSize -= 0.005;
   }
   if (window.innerWidth < 1000) {
-    ballSize -= 0.0199;
+    ballSize -= 0.0195;
   }
 }
 
