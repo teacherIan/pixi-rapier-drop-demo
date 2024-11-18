@@ -90,7 +90,7 @@ export class OutroWorld {
     //turn characters into textures
     let textures = characters.map((c) => {
       const counterStyle = new PIXI.TextStyle({
-        fontSize: 100,
+        fontSize: window.innerWidth < 1000 ? 50 : 100,
       });
 
       const confettiIcon = new PIXI.Text(c, counterStyle);

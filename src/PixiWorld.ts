@@ -98,7 +98,7 @@ export default class PixiWorld {
     let num = 0;
     const textSprite: PIXI.BitmapText = new PIXI.BitmapText(num.toString(), {
       fontName: 'myFont',
-      fontSize: 150,
+      fontSize: window.innerWidth < 1000 ? 50 : 150,
       align: 'center',
       tint: 0xffffff,
       // letterSpacing: 50,

@@ -191,6 +191,9 @@ function setSettings(max: number) {
   if (window.innerHeight < 1000) {
     ballSize -= 0.005;
   }
+  if (window.innerWidth < 1000) {
+    ballSize -= 0.018;
+  }
 }
 
 function gameLogic() {
@@ -286,14 +289,19 @@ function gameLogic() {
       );
     })
     .then(() => {
-      introCanvas.style.display = 'none';
+      const textScaleX = (introCanvas.style.display = 'none');
       introApp.destroy();
 
       let timeline = gsap.timeline();
       timeline.to(ruby.App.titleText, {
         pixi: {
           scaleY: 1.3,
-          scaleX: window.innerWidth < 1600 ? 1.4 : 1.5,
+          scaleX:
+            window.innerWidth < 1600
+              ? window.innerWidth < 1000
+                ? 0.35
+                : 1.4
+              : 1.5,
         },
         duration: 1.7,
         ease: 'bounce',
@@ -301,7 +309,12 @@ function gameLogic() {
       timeline.to(amber.App.titleText, {
         pixi: {
           scaleY: 1.3,
-          scaleX: window.innerWidth < 1600 ? 1.1 : 1.2,
+          scaleX:
+            window.innerWidth < 1600
+              ? window.innerWidth < 1000
+                ? 0.3
+                : 1.1
+              : 1.2,
         },
         duration: 1.7,
         ease: 'bounce',
@@ -310,7 +323,12 @@ function gameLogic() {
       timeline.to(pearl.App.titleText, {
         pixi: {
           scaleY: 1.3,
-          scaleX: window.innerWidth < 1600 ? 1.1 : 1.2,
+          scaleX:
+            window.innerWidth < 1600
+              ? window.innerWidth < 1000
+                ? 0.3
+                : 1.1
+              : 1.2,
         },
         duration: 1.7,
         ease: 'bounce',
@@ -319,7 +337,12 @@ function gameLogic() {
       timeline.to(sapphire.App.titleText, {
         pixi: {
           scaleY: 1.3,
-          scaleX: window.innerWidth < 1600 ? 0.7 : 0.8,
+          scaleX:
+            window.innerWidth < 1600
+              ? window.innerWidth < 1000
+                ? 0.2
+                : 0.7
+              : 0.8,
         },
         duration: 1.7,
         ease: 'bounce',
