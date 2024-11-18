@@ -86,7 +86,7 @@ export default class IntroWorld {
   }
 
   public async createDisplacementSprite() {
-    const smallScreen = window.innerWidth < 1000 ? -500 : 0;
+    const smallScreen = window.innerWidth < 1000 ? -300 : 0;
     // await PIXI.Assets.cache.get('introBackground');
     let sheet = await PIXI.Assets.load('/sprites.json');
     const backgroundSprite = PIXI.Sprite.from(sheet.textures['Orb_08.png']);
