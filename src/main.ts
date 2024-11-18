@@ -85,6 +85,10 @@ function startGame() {
   introCanvas.addEventListener('click', () => {
     gameLogic();
   });
+
+  introCanvas.addEventListener('touchstart', () => {
+    gameLogic();
+  });
 }
 
 function startIntroScene() {
@@ -352,7 +356,8 @@ Experience
 
 //start intro scene after fonts are loaded
 document.addEventListener('DOMContentLoaded', () => {
-  if (window.innerWidth < 1400) {
+  if (false) {
+    //window.innerWidth < 1400
     const div = document.createElement('div');
     div.className = 'smallScreen';
     div.innerHTML = 'Sorry, Screen Size Too Small';

@@ -49,13 +49,13 @@ export default class IntroWorld {
   public createText(text: string) {
     const style = new PIXI.TextStyle({
       fontFamily: 'Impact',
-      fontSize: window.innerHeight / 4 + 15,
-      fill: 'transparent',
+      fontSize: window.innerWidth / 4 + 15,
+      fill: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 1,
+      strokeThickness: 5,
       dropShadow: true,
       dropShadowColor: '#000000',
-      dropShadowBlur: 10,
+      dropShadowBlur: 5,
       dropShadowAngle: Math.PI / 6,
       dropShadowDistance: 5,
       letterSpacing: 10,
@@ -67,6 +67,7 @@ export default class IntroWorld {
     richText.scale.y = 1.5;
     richText.scale.x = 1.2;
     richText.alpha = 1;
+    richText.tint = '#ffffff';
 
     this.app.ticker.add(() => {
       // richText.rotation += 0.0005;
