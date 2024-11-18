@@ -86,6 +86,7 @@ export default class IntroWorld {
   }
 
   public async createDisplacementSprite() {
+    const smallScreen = window.innerWidth < 1000 ? -500 : 0;
     // await PIXI.Assets.cache.get('introBackground');
     let sheet = await PIXI.Assets.load('/sprites.json');
     const backgroundSprite = PIXI.Sprite.from(sheet.textures['Orb_08.png']);
@@ -95,8 +96,8 @@ export default class IntroWorld {
     backgroundSprite.eventMode = 'dynamic';
     backgroundSprite.cursor = 'pointer';
     this.stage.addChild(backgroundSprite);
-    backgroundSprite.width = window.innerHeight * 1.5;
-    backgroundSprite.height = window.innerHeight * 1.5;
+    backgroundSprite.width = window.innerHeight * 1.4 + smallScreen;
+    backgroundSprite.height = window.innerHeight * 1.4 + smallScreen;
     backgroundSprite.anchor.set(0.5);
     backgroundSprite.x = this.app.screen.width / 2;
     backgroundSprite.y = this.app.screen.height / 2;
