@@ -46,6 +46,7 @@ export default class PixiWorld {
       resolution: Math.min(window.devicePixelRatio, 2),
       autoDensity: true,
       powerPreference: 'high-performance',
+      hello: true,
     });
     this.stage = this.app.stage;
     this.App.stage.addChild(this.particleContainer);

@@ -3,7 +3,7 @@
   margin: 0;
   /* overflow: hidden; */
   /* box-sizing: border-box; */
-  background-color: 0x101935;
+
 }
 
 .container {
@@ -12,7 +12,7 @@
   height: 100vh;
   width: 100vw;
   z-index: 1000;
-  background-color: 0x101935;
+  background-color: #101935;
 
 
 }
@@ -21,7 +21,7 @@
   /* border: 1px black solid; */
   height: 100vh;
   width: 25%;
-  background-color: 0x101935;
+
   z-index: 2000;
 
 }
@@ -32,9 +32,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  background-color: 0x101935;
   z-index: 6000;
-
 }
 
 #outro-canvas {
@@ -43,7 +41,6 @@
   position: absolute;
   left: 0;
   top: 0;
-  background-color: 0x101935;
   z-index: 9999;
   display: none
 }
