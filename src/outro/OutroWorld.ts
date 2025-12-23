@@ -1,6 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { PixelateFilter } from '@pixi/filter-pixelate';
-import { AsciiFilter } from '@pixi/filter-ascii';
+import { PixelateFilter, AsciiFilter } from 'pixi-filters';
 import { gsap } from 'gsap';
 //@ts-ignore
 import { PixiPlugin } from 'gsap/PixiPlugin.js';
@@ -8,15 +7,20 @@ import { PixiPlugin } from 'gsap/PixiPlugin.js';
 gsap.registerPlugin(PixiPlugin);
 PixiPlugin.registerPIXI(PIXI);
 
-PIXI.Filter.defaultResolution = 2;
-
 export class OutroWorld {
-  private App;
-  private img;
+  private App: PIXI.Application;
+  private img: string;
+  private initialized: boolean = false;
 
   constructor(parent: HTMLCanvasElement, img: string) {
-    this.App = new PIXI.Application({
-      view: document.getElementById('outro-canvas') as HTMLCanvasElement,
+    this.App = new PIXI.Application();
+    this.img = img;
+    this.initApp(parent);
+  }
+
+  private async initApp(parent: HTMLCanvasElement): Promise<void> {
+    await this.App.init({
+      canvas: document.getElementById('outro-canvas') as HTMLCanvasElement,
       resizeTo: parent,
       width: window.innerWidth,
       height: window.innerHeight,
@@ -26,44 +30,37 @@ export class OutroWorld {
       autoDensity: true,
       powerPreference: 'high-performance',
     });
-    this.img = img;
-    this.App.stage.sortableChildren = true;
 
-    this.createBackgroundImage().then(() => {
-      this.createConfetti();
-    });
+    this.App.stage.sortableChildren = true;
+    this.initialized = true;
+
+    await this.createBackgroundImage();
+    this.createConfetti();
   }
 
-  public async createBackgroundImage() {
-    //@ts-ignore
-    let bg = await PIXI.Assets.load('/' + this.img.toLowerCase() + 'Dark.jpg');
+  public async createBackgroundImage(): Promise<void> {
+    const bg = await PIXI.Assets.load('/' + this.img.toLowerCase() + 'Dark.jpg');
     const image = PIXI.Sprite.from(bg);
     image.width = 0;
     image.height = 0;
     image.alpha = 1;
     image.zIndex = 0;
 
-    const asciiFilter = new AsciiFilter();
-    asciiFilter.size = 6; //6
-    let displacementMap = await PIXI.Assets.load(
-      '/displacement_map_repeat.jpg'
-    );
+    const asciiFilter = new AsciiFilter({ size: 6 });
+    const displacementMap = await PIXI.Assets.load('/displacement_map_repeat.jpg');
 
     const displacementSprite = new PIXI.Sprite(displacementMap);
     image.addChild(displacementSprite);
-    const displacementSpriteFilter = new PIXI.DisplacementFilter(
-      displacementSprite
-    );
 
-    displacementSpriteFilter.autoFit = false;
-    displacementSpriteFilter.scale.x = 600;
-    displacementSpriteFilter.scale.y = 300;
+    const displacementSpriteFilter = new PIXI.DisplacementFilter({
+      sprite: displacementSprite,
+      scale: { x: 600, y: 300 },
+    });
+
     displacementSpriteFilter.padding = 100;
+    displacementSprite.texture.source.wrapMode = 'repeat';
 
-    displacementSprite.texture.baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
-
-    const filter = new PixelateFilter();
-    filter.size = 6;
+    const filter = new PixelateFilter(6);
     image.filters = [asciiFilter, displacementSpriteFilter];
 
     this.App.stage.addChild(image);
@@ -76,29 +73,29 @@ export class OutroWorld {
       duration: 10,
     });
 
-    this.App.ticker.add((delta) => {
+    this.App.ticker.add(() => {
       displacementSprite.x += 1;
-      // displacementSprite.y += 1;
     });
   }
 
-  private createConfetti() {
-    let confettiContainer = new PIXI.Container();
+  private createConfetti(): void {
+    const confettiContainer = new PIXI.Container();
     this.App.stage.addChild(confettiContainer);
 
-    let characters = ['🥳', '🎉', '✨'];
-    //turn characters into textures
-    let textures = characters.map((c) => {
+    const characters = ['🥳', '🎉', '✨'];
+
+    // Create textures from text
+    const textures = characters.map((c) => {
       const counterStyle = new PIXI.TextStyle({
         fontSize: window.innerWidth < 1000 ? 50 : 100,
       });
 
-      const confettiIcon = new PIXI.Text(c, counterStyle);
+      const confettiIcon = new PIXI.Text({ text: c, style: counterStyle });
       return this.App.renderer.generateTexture(confettiIcon);
     });
 
-    let confettiAmount = 70;
-    let confetti = new Array(confettiAmount)
+    const confettiAmount = 70;
+    const confetti = new Array(confettiAmount)
       .fill(null)
       .map((_, i) => {
         return {
@@ -121,9 +118,9 @@ export class OutroWorld {
       confettiContainer.addChild(confettiIconSprite);
     }
 
-    this.App.ticker.add((delta) => {
+    this.App.ticker.add((ticker) => {
       confettiContainer.children.forEach((confettiIcon) => {
-        confettiIcon.y += 0.1 * confettiIcon.zIndex * delta * 10;
+        confettiIcon.y += 0.1 * confettiIcon.zIndex * ticker.deltaTime * 10;
         if (confettiIcon.y > window.innerHeight) confettiIcon.y = -100;
       });
     });

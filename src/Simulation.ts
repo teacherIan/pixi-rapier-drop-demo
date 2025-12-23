@@ -4,9 +4,9 @@ import { PhysisWorld } from './Rapier';
 import PixiWorld from './PixiWorld';
 import { gsap } from 'gsap';
 import { OutroWorld } from './outro/OutroWorld';
-const outroCanvas = document.getElementById(
-  'outro-canvas'
-) as HTMLCanvasElement;
+
+const outroCanvas = document.getElementById('outro-canvas') as HTMLCanvasElement;
+
 //@ts-ignore
 import { PixiPlugin } from 'gsap/PixiPlugin.js';
 gsap.registerPlugin(PixiPlugin);
@@ -55,12 +55,11 @@ export default class Simulation {
         return;
       }
 
-      // if (random < 0.2) return;
       if (this.sphereCounter >= this.counter) {
         clearInterval(this.interval);
       }
-      let remaining = this.counter - this.sphereCounter;
-      let size = Math.min(
+      const remaining = this.counter - this.sphereCounter;
+      const size = Math.min(
         Math.floor(Math.random() * maxMultiplier) + 1,
         remaining
       );
@@ -74,7 +73,8 @@ export default class Simulation {
       this.app.updateCounterText(this.sphereCounter);
     }, gameSpeed);
 
-    this.app.App.ticker.add((delta: number) => {
+    // In PixiJS v8, ticker callback receives a Ticker object with deltaTime property
+    this.app.App.ticker.add((ticker) => {
       this.sphereArr.forEach((sphere) => {
         sphere.render.x = sphere.physics.translation().x;
         sphere.render.y = sphere.physics.translation().y;
@@ -82,7 +82,7 @@ export default class Simulation {
       });
 
       if (!this.isFinished) {
-        this.world.stepWorld(delta * 0.1);
+        this.world.stepWorld(ticker.deltaTime * 0.1);
         this.app.App.render();
       }
 
@@ -105,21 +105,20 @@ export default class Simulation {
 
           outroCanvas.style.zIndex = '9999';
           outroCanvas.style.display = 'block';
-          let outroWorld = new OutroWorld(
+          const outroWorld = new OutroWorld(
             outroCanvas as HTMLCanvasElement,
             this.winningHouse
           );
         }
         setTimeout(() => {
           this.isFinished = true;
-          // this.app.App.ticker.destroy();
           console.log('Destroy ticker');
         }, 12000);
       }
     });
   }
 
-  public createSphere(x: number, y: number, size: number) {
+  public createSphere(x: number, y: number, size: number): void {
     const sphere = this.app.createSphere(size);
     this.app.ParticleContainer.addChild(sphere);
     const physicsSphere = this.world.createPhysicsSphere(x, y, size);

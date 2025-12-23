@@ -1,8 +1,5 @@
 import './style.css';
-const outroCanvas = document.getElementById(
-  'outro-canvas'
-) as HTMLCanvasElement;
-import pixiWorld from './PixiWorld';
+import PixiWorld from './PixiWorld';
 import * as PIXI from 'pixi.js';
 import * as RAPIER from '@dimforge/rapier2d-compat';
 import { PhysisWorld } from './Rapier';
@@ -10,34 +7,29 @@ import Simulation from './Simulation';
 import IntroWorld from './intro/IntroWorld';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../db/db';
-const introCanvas = document.getElementById(
-  'intro-canvas'
-) as HTMLCanvasElement;
 import { gsap } from 'gsap';
 //@ts-ignore
 import { PixiPlugin } from 'gsap/PixiPlugin.js';
 import { OutroWorld } from './outro/OutroWorld';
+
 gsap.registerPlugin(PixiPlugin);
 PixiPlugin.registerPIXI(PIXI);
+
+const outroCanvas = document.getElementById('outro-canvas') as HTMLCanvasElement;
+const introCanvas = document.getElementById('intro-canvas') as HTMLCanvasElement;
 const dropContainer = document.querySelector('.container') as HTMLElement;
 
-//options
+// options
 let ballSize = 0.5;
 let maxMultiplier = 1;
 
-//variables
-
+// variables
 let clicked = false;
-
 let sheet: PIXI.Spritesheet;
-let bitmapFonts: PIXI.BitmapFont;
 let introWorld: IntroWorld;
 let introStage: PIXI.Container;
 let introApp: PIXI.Application;
-let ruby: Simulation,
-  amber: Simulation,
-  pearl: Simulation,
-  sapphire: Simulation;
+let ruby: Simulation, amber: Simulation, pearl: Simulation, sapphire: Simulation;
 
 let rubyMaxAmountDB: number = 0;
 let amberMaxAmountDB: number = 0;
@@ -78,11 +70,6 @@ async function getRandomData() {
 }
 
 function startGame() {
-  //start with keyboard
-  // document.addEventListener('keyup', () => {
-  //   gameLogic();
-  // });
-
   introCanvas.addEventListener('click', () => {
     gameLogic();
   });
@@ -92,40 +79,46 @@ function startGame() {
   });
 }
 
-function startIntroScene() {
-  PIXI.BitmapFont.from('myFont', {
-    fontFamily: 'ARCADECLASSIC',
-    fontSize: 200,
-    fill: 0xffffff,
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 10,
-    dropShadow: true,
-    dropShadowColor: '#000000',
-    dropShadowBlur: 1,
+async function startIntroScene() {
+  // Install BitmapFont in v8 style
+  PIXI.BitmapFont.install({
+    name: 'myFont',
+    style: {
+      fontFamily: 'ARCADECLASSIC',
+      fontSize: 200,
+      fill: 0xffffff,
+      align: 'center',
+      stroke: { color: '#000000', width: 10 },
+      dropShadow: {
+        alpha: 1,
+        blur: 1,
+        color: '#000000',
+        distance: 0,
+      },
+    },
   });
+
   introWorld = new IntroWorld(introCanvas as HTMLCanvasElement);
+  await introWorld.init();
   introStage = introWorld.getStage();
   introApp = introWorld.getApp();
 
   text = introWorld.createText('LOADING');
-  // getPracticeData(); // no external db
-
   introStage.addChild(text);
   text.zIndex = 100;
 }
 
-//functions
+// functions
 async function loader() {
   await PIXI.Assets.load('/ArcadeClassic.ttf');
   await PIXI.Assets.load('/SSIS__logo.png');
   sheet = await PIXI.Assets.load('/sprites.json');
   await PIXI.Assets.load('/displacement_map_repeat.jpg');
-  PIXI.Assets.add('introBackground', '/SSIS__logo.png');
+  PIXI.Assets.add({ alias: 'introBackground', src: '/SSIS__logo.png' });
   await PIXI.Assets.load('introBackground');
   await RAPIER.init();
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     resolve('Loaded');
   });
 }
@@ -199,15 +192,13 @@ function setSettings(max: number) {
   }
 }
 
-function gameLogic() {
+async function gameLogic() {
   audio.play();
   if (clicked) return;
   clicked = true;
   text.text = `DROP!`;
   if (introCanvas.requestFullscreen) {
     introCanvas.requestFullscreen();
-    // introCanvas.width = window.innerWidth;
-    // introCanvas.height = window.innerHeight;
   }
 
   dropContainer.innerHTML = `<canvas class="canvas" id="canvasA"></canvas>
@@ -224,18 +215,50 @@ function gameLogic() {
       duration: 10,
       ease: 'expo.in',
     })
-    .then(() => {
-      // introStage.destroy();
+    .then(async () => {
+      // Create PixiWorld instances and initialize them
+      const rubyWorld = new PixiWorld(
+        document.getElementById('canvasA') as HTMLCanvasElement,
+        'Orb_08.png',
+        ballSize,
+        'Ruby',
+        0xc11c22,
+        sheet
+      );
+      await rubyWorld.init();
+
+      const amberWorld = new PixiWorld(
+        document.getElementById('canvasB') as HTMLCanvasElement,
+        'Orb_09.png',
+        ballSize,
+        'Amber',
+        0xe46725,
+        sheet
+      );
+      await amberWorld.init();
+
+      const pearlWorld = new PixiWorld(
+        document.getElementById('canvasC') as HTMLCanvasElement,
+        'Orb_20.png',
+        ballSize,
+        'Pearl',
+        0xffffff,
+        sheet
+      );
+      await pearlWorld.init();
+
+      const sapphireWorld = new PixiWorld(
+        document.getElementById('canvasD') as HTMLCanvasElement,
+        'Orb_11.png',
+        ballSize,
+        'Sapphire',
+        0x1271b5,
+        sheet
+      );
+      await sapphireWorld.init();
 
       ruby = new Simulation(
-        new pixiWorld(
-          document.getElementById('canvasA') as HTMLCanvasElement,
-          'Orb_08.png',
-          ballSize,
-          'Ruby',
-          0xc11c22,
-          sheet
-        ),
+        rubyWorld,
         new PhysisWorld(ballSize),
         rubyMaxAmountDB,
         winningHouse,
@@ -244,14 +267,7 @@ function gameLogic() {
       );
 
       amber = new Simulation(
-        new pixiWorld(
-          document.getElementById('canvasB') as HTMLCanvasElement,
-          'Orb_09.png',
-          ballSize,
-          'Amber',
-          0xe46725,
-          sheet
-        ),
+        amberWorld,
         new PhysisWorld(ballSize),
         amberMaxAmountDB,
         winningHouse,
@@ -260,14 +276,7 @@ function gameLogic() {
       );
 
       pearl = new Simulation(
-        new pixiWorld(
-          document.getElementById('canvasC') as HTMLCanvasElement,
-          'Orb_20.png',
-          ballSize,
-          'Pearl',
-          0xffffff,
-          sheet
-        ),
+        pearlWorld,
         new PhysisWorld(ballSize),
         pearlMaxAmountDB,
         winningHouse,
@@ -276,26 +285,18 @@ function gameLogic() {
       );
 
       sapphire = new Simulation(
-        new pixiWorld(
-          document.getElementById('canvasD') as HTMLCanvasElement,
-          'Orb_11.png',
-          ballSize,
-          'Sapphire',
-          0x1271b5,
-          sheet
-        ),
+        sapphireWorld,
         new PhysisWorld(ballSize),
         sapphireMaxAmountDB,
         winningHouse,
         gameSpeed,
         maxMultiplier
       );
-    })
-    .then(() => {
-      const textScaleX = (introCanvas.style.display = 'none');
+
+      introCanvas.style.display = 'none';
       introApp.destroy();
 
-      let timeline = gsap.timeline();
+      const timeline = gsap.timeline();
       timeline.to(ruby.App.titleText, {
         pixi: {
           scaleY: window.innerWidth < 1000 ? 0.9 : 1.3,
@@ -366,7 +367,6 @@ function gameLogic() {
             {
               pixi: {
                 scaleX: window.innerWidth < 1600 ? 0.9 : 1,
-
                 scaleY: 2,
               },
               duration: 10,
@@ -380,18 +380,18 @@ function gameLogic() {
 Experience
 */
 
-//start intro scene after fonts are loaded
+// start intro scene after fonts are loaded
 document.addEventListener('DOMContentLoaded', () => {
   if (false) {
-    //window.innerWidth < 1400
+    // window.innerWidth < 1400
     const div = document.createElement('div');
     div.className = 'smallScreen';
     div.innerHTML = 'Sorry, Screen Size Too Small';
     document.body.appendChild(div);
   } else {
     loader()
-      .then(() => {
-        startIntroScene();
+      .then(async () => {
+        await startIntroScene();
       })
       .then(() => {
         getRandomData()
@@ -404,4 +404,3 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 });
-//allows game to start after data is loaded.  Promise is rejected

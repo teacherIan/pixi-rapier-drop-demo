@@ -1,19 +1,18 @@
 import * as PIXI from 'pixi.js';
 
-PIXI.Filter.defaultResolution = 2;
-
 export default class PixiWorld {
   private app: PIXI.Application;
-  private stage: PIXI.Container;
+  private stage!: PIXI.Container;
   private texture: string;
   private ballSize: number;
   private title: string;
   private color: number;
-  private sheet;
-  private counterText: PIXI.BitmapText;
+  private sheet: PIXI.Spritesheet;
+  private counterText!: PIXI.BitmapText;
   private counter: number;
-  public titleText: PIXI.BitmapText;
-  private particleContainer: PIXI.ParticleContainer;
+  public titleText!: PIXI.BitmapText;
+  private particleContainer!: PIXI.Container;
+  private canvas: HTMLCanvasElement;
 
   constructor(
     parent: HTMLCanvasElement,
@@ -21,24 +20,22 @@ export default class PixiWorld {
     ballSize: number,
     name: string,
     color: number,
-    sheet: any
+    sheet: PIXI.Spritesheet
   ) {
+    this.canvas = parent;
     this.title = name;
     this.color = color;
     this.texture = texture;
     this.ballSize = ballSize;
     this.sheet = sheet;
     this.counter = 0;
-    this.particleContainer = new PIXI.ParticleContainer(10000, {
-      scale: true,
-      position: true,
-      rotation: true,
-      uvs: true,
-      alpha: true,
-    });
-    this.app = new PIXI.Application({
-      view: parent,
-      resizeTo: parent,
+    this.app = new PIXI.Application();
+  }
+
+  async init(): Promise<void> {
+    await this.app.init({
+      canvas: this.canvas,
+      resizeTo: this.canvas,
       width: window.innerWidth / 4,
       height: window.innerHeight,
       backgroundColor: 0x101935,
@@ -48,14 +45,20 @@ export default class PixiWorld {
       powerPreference: 'high-performance',
       hello: true,
     });
+
     this.stage = this.app.stage;
-    this.App.stage.addChild(this.particleContainer);
+
+    // In v8, we use a regular Container for particles (ParticleContainer API changed significantly)
+    this.particleContainer = new PIXI.Container();
+    this.app.stage.addChild(this.particleContainer);
     this.app.stage.sortableChildren = true;
+
     this.titleText = this.createTitleText();
     this.createLeftWall();
     this.createRightWall();
     this.counterText = this.createCounterText();
   }
+
   public get App(): PIXI.Application {
     return this.app;
   }
@@ -64,7 +67,7 @@ export default class PixiWorld {
     return this.stage;
   }
 
-  public get ParticleContainer(): PIXI.ParticleContainer {
+  public get ParticleContainer(): PIXI.Container {
     return this.particleContainer;
   }
 
@@ -75,19 +78,20 @@ export default class PixiWorld {
     return sphere;
   }
 
-  private createTitleText() {
-    const textSprite: PIXI.BitmapText = new PIXI.BitmapText(this.title, {
-      fontName: 'myFont',
-      fontSize: 120,
-      align: 'center',
-      tint: this.color,
+  private createTitleText(): PIXI.BitmapText {
+    const textSprite = new PIXI.BitmapText({
+      text: this.title,
+      style: {
+        fontFamily: 'myFont',
+        fontSize: 120,
+        align: 'center' as const,
+      },
     });
-
+    textSprite.tint = this.color;
     textSprite.x = window.innerWidth / 8;
     textSprite.y = window.innerHeight / 8;
     textSprite.anchor.set(0.5);
     textSprite.zIndex = 0;
-
     textSprite.scale.set(0, 0);
     textSprite.roundPixels = true;
 
@@ -96,58 +100,54 @@ export default class PixiWorld {
   }
 
   private createCounterText(): PIXI.BitmapText {
-    let num = 0;
-    const textSprite: PIXI.BitmapText = new PIXI.BitmapText(num.toString(), {
-      fontName: 'myFont',
-      fontSize: window.innerWidth < 1000 ? 50 : 150,
-      align: 'center',
-      tint: 0xffffff,
-      // letterSpacing: 50,
+    const num = 0;
+    const textSprite = new PIXI.BitmapText({
+      text: num.toString(),
+      style: {
+        fontFamily: 'myFont',
+        fontSize: window.innerWidth < 1000 ? 50 : 150,
+        align: 'center' as const,
+      },
     });
-
+    textSprite.tint = 0xffffff;
     textSprite.x = window.innerWidth / 8;
     textSprite.y = window.innerHeight - window.innerHeight / 8;
     textSprite.anchor.set(0.5);
     textSprite.zIndex = 100;
-    // textSprite.scale.y = 2;
-
     textSprite.scale.set(0, 0);
 
     this.app.stage.addChild(textSprite);
     return textSprite;
   }
 
-  private createLeftWall() {
+  private createLeftWall(): void {
     const wall = new PIXI.Graphics();
-    wall.beginFill(0x000000);
-    wall.drawRect(0, 0, 1, window.innerHeight);
-    wall.endFill();
+    wall.rect(0, 0, 1, window.innerHeight);
+    wall.fill(0x000000);
     wall.x = 0;
     wall.y = 0;
     this.app.stage.addChild(wall);
   }
 
-  private createRightWall() {
+  private createRightWall(): void {
     const wall = new PIXI.Graphics();
-    wall.beginFill(0x000000);
-    wall.drawRect(0, 0, 1, window.innerHeight);
-    wall.endFill();
+    wall.rect(0, 0, 1, window.innerHeight);
+    wall.fill(0x000000);
     wall.x = window.innerWidth / 4;
     wall.y = 0;
     this.app.stage.addChild(wall);
   }
 
-  public updateCounterText(num: number) {
+  public updateCounterText(num: number): void {
     let text = num.toString();
     while (text.length < 4) {
       text = '0' + text;
     }
-
     this.counterText.text = text;
   }
 
-  public resize() {
-    this.App.resize();
+  public resize(): void {
+    this.app.resize();
   }
 
   public getName(): string {
