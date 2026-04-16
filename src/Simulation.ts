@@ -1,18 +1,16 @@
-import * as PIXI from 'pixi.js';
 import * as RAPIER from '@dimforge/rapier2d-compat';
+import { Sprite } from 'pixi.js';
 import { PhysisWorld } from './Rapier';
 import PixiWorld from './PixiWorld';
-import { gsap } from 'gsap';
+import { gsap } from './gsapSetup';
 import { OutroWorld } from './outro/OutroWorld';
+
 const outroCanvas = document.getElementById(
   'outro-canvas'
 ) as HTMLCanvasElement;
-//@ts-ignore
-import { PixiPlugin } from 'gsap/PixiPlugin.js';
-gsap.registerPlugin(PixiPlugin);
 
 interface IObject {
-  render: PIXI.Sprite;
+  render: Sprite;
   physics: RAPIER.RigidBody;
 }
 
@@ -23,14 +21,12 @@ export default class Simulation {
   private app: PixiWorld;
   private world: PhysisWorld;
   private sphereArr: IObject[] = [];
-  private counter;
+  private counter: number;
   private interval: number;
   private sphereCounter: number = 0;
   private finished: boolean;
   private winningHouse: string;
   private isFinished: boolean;
-  private gameSpeed: number;
-  private maxMultiplier: number;
 
   constructor(
     app: PixiWorld,
@@ -40,13 +36,10 @@ export default class Simulation {
     gameSpeed: number,
     maxMultiplier: number
   ) {
-    this.maxMultiplier = maxMultiplier;
     this.isFinished = false;
     this.counter = counter;
     this.app = app;
     this.world = world;
-    this.gameSpeed = gameSpeed;
-
     this.finished = false;
     this.winningHouse = winningHouse;
 
@@ -55,12 +48,11 @@ export default class Simulation {
         return;
       }
 
-      // if (random < 0.2) return;
       if (this.sphereCounter >= this.counter) {
         clearInterval(this.interval);
       }
-      let remaining = this.counter - this.sphereCounter;
-      let size = Math.min(
+      const remaining = this.counter - this.sphereCounter;
+      const size = Math.min(
         Math.floor(Math.random() * maxMultiplier) + 1,
         remaining
       );
@@ -74,7 +66,8 @@ export default class Simulation {
       this.app.updateCounterText(this.sphereCounter);
     }, gameSpeed);
 
-    this.app.App.ticker.add((delta: number) => {
+    this.app.App.ticker.add((ticker) => {
+      const delta = ticker.deltaTime;
       this.sphereArr.forEach((sphere) => {
         sphere.render.x = sphere.physics.translation().x;
         sphere.render.y = sphere.physics.translation().y;
@@ -101,19 +94,15 @@ export default class Simulation {
         }
 
         if (Simulation.simulationsFinished >= 4) {
-          console.log('All Finished');
-
           outroCanvas.style.zIndex = '9999';
           outroCanvas.style.display = 'block';
-          let outroWorld = new OutroWorld(
+          OutroWorld.create(
             outroCanvas as HTMLCanvasElement,
             this.winningHouse
           );
         }
         setTimeout(() => {
           this.isFinished = true;
-          // this.app.App.ticker.destroy();
-          console.log('Destroy ticker');
         }, 12000);
       }
     });

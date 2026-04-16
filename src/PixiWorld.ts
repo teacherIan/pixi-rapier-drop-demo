@@ -1,93 +1,98 @@
-import * as PIXI from 'pixi.js';
-
-PIXI.Filter.defaultResolution = 2;
+import { Application, Container, Sprite, Text, TextStyle, Graphics, Spritesheet } from 'pixi.js';
 
 export default class PixiWorld {
-  private app: PIXI.Application;
-  private stage: PIXI.Container;
+  private app!: Application;
+  private stage!: Container;
   private texture: string;
   private ballSize: number;
   private title: string;
   private color: number;
-  private sheet;
-  private counterText: PIXI.BitmapText;
-  private counter: number;
-  public titleText: PIXI.BitmapText;
-  private particleContainer: PIXI.ParticleContainer;
+  private sheet: Spritesheet;
+  private counterText!: Text;
+  public titleText!: Text;
+  private particleContainer!: Container;
 
-  constructor(
-    parent: HTMLCanvasElement,
+  private constructor(
     texture: string,
     ballSize: number,
     name: string,
     color: number,
-    sheet: any
+    sheet: Spritesheet
   ) {
     this.title = name;
     this.color = color;
     this.texture = texture;
     this.ballSize = ballSize;
     this.sheet = sheet;
-    this.counter = 0;
-    this.particleContainer = new PIXI.ParticleContainer(10000, {
-      scale: true,
-      position: true,
-      rotation: true,
-      uvs: true,
-      alpha: true,
-    });
-    this.app = new PIXI.Application({
-      view: parent,
+  }
+
+  static async create(
+    parent: HTMLCanvasElement,
+    texture: string,
+    ballSize: number,
+    name: string,
+    color: number,
+    sheet: Spritesheet
+  ): Promise<PixiWorld> {
+    const world = new PixiWorld(texture, ballSize, name, color, sheet);
+
+    world.app = new Application();
+    await world.app.init({
+      canvas: parent,
       resizeTo: parent,
       width: window.innerWidth / 4,
       height: window.innerHeight,
-      backgroundColor: 0x101935,
+      background: 0x101935,
       backgroundAlpha: 1,
       resolution: Math.min(window.devicePixelRatio, 2),
       autoDensity: true,
       powerPreference: 'high-performance',
-      hello: true,
     });
-    this.stage = this.app.stage;
-    this.App.stage.addChild(this.particleContainer);
-    this.app.stage.sortableChildren = true;
-    this.titleText = this.createTitleText();
-    this.createLeftWall();
-    this.createRightWall();
-    this.counterText = this.createCounterText();
+
+    world.stage = world.app.stage;
+    world.particleContainer = new Container();
+    world.app.stage.addChild(world.particleContainer);
+    world.titleText = world.createTitleText();
+    world.createLeftWall();
+    world.createRightWall();
+    world.counterText = world.createCounterText();
+
+    return world;
   }
-  public get App(): PIXI.Application {
+
+  public get App(): Application {
     return this.app;
   }
 
-  public get Stage(): PIXI.Container {
+  public get Stage(): Container {
     return this.stage;
   }
 
-  public get ParticleContainer(): PIXI.ParticleContainer {
+  public get ParticleContainer(): Container {
     return this.particleContainer;
   }
 
-  public createSphere(size: number): PIXI.Sprite {
-    const sphere = PIXI.Sprite.from(this.sheet.textures[this.texture]);
+  public createSphere(size: number): Sprite {
+    const sphere = Sprite.from(this.sheet.textures[this.texture]);
     sphere.scale.set(size * this.ballSize);
     sphere.anchor.set(0.5);
     return sphere;
   }
 
-  private createTitleText() {
-    const textSprite: PIXI.BitmapText = new PIXI.BitmapText(this.title, {
-      fontName: 'myFont',
+  private createTitleText(): Text {
+    const style = new TextStyle({
+      fontFamily: 'ARCADECLASSIC',
       fontSize: 120,
       align: 'center',
-      tint: this.color,
+      fill: this.color,
+      stroke: { color: '#000000', width: 6 },
     });
+    const textSprite = new Text({ text: this.title, style });
 
     textSprite.x = window.innerWidth / 8;
     textSprite.y = window.innerHeight / 8;
     textSprite.anchor.set(0.5);
     textSprite.zIndex = 0;
-
     textSprite.scale.set(0, 0);
     textSprite.roundPixels = true;
 
@@ -95,22 +100,20 @@ export default class PixiWorld {
     return textSprite;
   }
 
-  private createCounterText(): PIXI.BitmapText {
-    let num = 0;
-    const textSprite: PIXI.BitmapText = new PIXI.BitmapText(num.toString(), {
-      fontName: 'myFont',
+  private createCounterText(): Text {
+    const style = new TextStyle({
+      fontFamily: 'ARCADECLASSIC',
       fontSize: window.innerWidth < 1000 ? 50 : 150,
       align: 'center',
-      tint: 0xffffff,
-      // letterSpacing: 50,
+      fill: 0xffffff,
+      stroke: { color: '#000000', width: 4 },
     });
+    const textSprite = new Text({ text: '0', style });
 
     textSprite.x = window.innerWidth / 8;
     textSprite.y = window.innerHeight - window.innerHeight / 8;
     textSprite.anchor.set(0.5);
     textSprite.zIndex = 100;
-    // textSprite.scale.y = 2;
-
     textSprite.scale.set(0, 0);
 
     this.app.stage.addChild(textSprite);
@@ -118,20 +121,16 @@ export default class PixiWorld {
   }
 
   private createLeftWall() {
-    const wall = new PIXI.Graphics();
-    wall.beginFill(0x000000);
-    wall.drawRect(0, 0, 1, window.innerHeight);
-    wall.endFill();
+    const wall = new Graphics();
+    wall.rect(0, 0, 1, window.innerHeight).fill(0x000000);
     wall.x = 0;
     wall.y = 0;
     this.app.stage.addChild(wall);
   }
 
   private createRightWall() {
-    const wall = new PIXI.Graphics();
-    wall.beginFill(0x000000);
-    wall.drawRect(0, 0, 1, window.innerHeight);
-    wall.endFill();
+    const wall = new Graphics();
+    wall.rect(0, 0, 1, window.innerHeight).fill(0x000000);
     wall.x = window.innerWidth / 4;
     wall.y = 0;
     this.app.stage.addChild(wall);
@@ -142,7 +141,6 @@ export default class PixiWorld {
     while (text.length < 4) {
       text = '0' + text;
     }
-
     this.counterText.text = text;
   }
 
@@ -154,11 +152,11 @@ export default class PixiWorld {
     return this.titleText.text;
   }
 
-  public getCounterText(): PIXI.BitmapText {
+  public getCounterText(): Text {
     return this.counterText;
   }
 
-  public getTitleText(): PIXI.BitmapText {
+  public getTitleText(): Text {
     return this.titleText;
   }
 }
