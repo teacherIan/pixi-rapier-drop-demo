@@ -224,6 +224,7 @@ async function gameLogic() {
   // pump on a static scene and never stop it again.
   document.addEventListener('visibilitychange', () => {
     if (Simulation.frozenLanes >= 4) return;
+    Simulation.paused = document.hidden; // freeze spawning in lockstep with the pump
     physics.setRunning(!document.hidden);
   });
 

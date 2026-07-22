@@ -35,6 +35,9 @@ export class GemDigitRow {
     }
     this.cellW = widest;
     this.set('0'.repeat(digits));
+    // Hidden until enter() drops it in — otherwise the seated "0000" shows for
+    // ~1.9s before the entrance yanks it up and drops it back.
+    this.container.visible = false;
   }
 
   set(text: string): void {
@@ -53,14 +56,19 @@ export class GemDigitRow {
       }
     });
     const total = this.cells.length * this.cellW;
-    this.cells.forEach((t, i) => t.position.set(-total / 2 + this.cellW * (i + 0.5), 0));
+    // Only own X here — the entrance animation (enter/tick) owns Y. Clobbering
+    // Y to 0 on every value update fought the drop-in during their overlap.
+    this.cells.forEach((t, i) => {
+      t.position.x = -total / 2 + this.cellW * (i + 0.5);
+    });
   }
 
   /** Begin the staggered drop-in from `dropPx` above the row's seat. */
   enter(dropPx: number): void {
+    this.container.visible = true;
     this.enterElapsed = 0;
     this.enterDrop = dropPx;
-    this.tick(0);
+    this.tick(0); // snap the cells above the screen for frame one
   }
 
   /** Advance the entrance; call every frame (no-op once settled). */

@@ -36,6 +36,9 @@ const STUCK_DIST = 48;
 const UNGHOST_DIST = 22;
 const FIXED_DT = 1 / 60;
 const GRAB_PAD = 1.15;
+// A non-interactive field settled this many frames stops stepping — otherwise
+// the four house-title worlds burn 60fps of physics for the whole page life.
+const IDLE_FRAMES = 30;
 
 export interface LetterFieldOpts {
   /** Style factory — gemTextStyle for this app. */
@@ -116,6 +119,7 @@ export class LetterField {
    * slots, the rest bonk off solid, missing letters stagger-fly in. */
   morphTo(layout: LayoutStrategy): void {
     if (this.destroyed) return;
+    this.world.settledFrames = 0; // revive the loop if this field had idled (see tick)
     const next = layout(this.app.screen.width, this.app.screen.height);
     removeWalls(this.world);
     this.world.stuckDist = STUCK_DIST * next.fit;
@@ -161,6 +165,14 @@ export class LetterField {
 
   private tick(): void {
     if (this.destroyed) return;
+    // A non-interactive field (a house title) that has come to rest needs no
+    // more physics — skip stepping AND the per-letter position writes. An
+    // interactive field keeps stepping so a pointer grab always finds a live
+    // world; a morph/scatter resets settledFrames and revives this one.
+    if (!this.opts.interactive && this.world.settledFrames > IDLE_FRAMES && !this.world.drag) {
+      this.acc = 0;
+      return;
+    }
     const dtMs = Math.min(50, this.app.ticker.deltaMS);
     this.acc += dtMs / 1000;
     let steps = 0;

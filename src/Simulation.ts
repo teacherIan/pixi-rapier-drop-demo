@@ -11,6 +11,7 @@ const outroCanvas = document.getElementById(
 
 export default class Simulation {
   public static started: boolean = false;
+  public static paused: boolean = false; // tab hidden — freeze spawning WITH the physics pump
   public static simulationsFinished: number = 0;
   public static frozenLanes: number = 0;
   private stage: GameStage;
@@ -44,7 +45,10 @@ export default class Simulation {
     void this.stage;
 
     this.interval = window.setInterval(() => {
-      if (!Simulation.started) {
+      // Freeze spawning while the tab is hidden — the worker pump is stopped, so
+      // continuing to spawn would advance the score/counter (even to finish())
+      // while every ball hangs frozen mid-air, diverging physics from score.
+      if (!Simulation.started || Simulation.paused) {
         return;
       }
 
