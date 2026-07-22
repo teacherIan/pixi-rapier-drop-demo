@@ -172,9 +172,11 @@ function setSettings(max: number) {
 }
 
 async function gameLogic() {
-  audio.play();
   if (clicked) return;
   clicked = true;
+  // After the guard (a second click must not double-play), and swallow the
+  // autoplay-policy rejection so it isn't an unhandled promise error.
+  audio.play().catch(() => {});
   // START morphs to DROP! — hold it readable, THEN let the letters fall off the
   // bottom as the whole intro stage slides away. 2200ms (was 1400) leaves DROP!
   // legible after its morph settles instead of exiting mid-morph.
@@ -204,6 +206,11 @@ async function gameLogic() {
     onLayout: (l) => {
       laneOffsets = l.offsets;
     },
+    onError: (msg) => {
+      // A worker/WASM init failure would otherwise silently hang the whole
+      // board (no READY, no frames). Surface it.
+      console.error('[drop] physics worker failed to start:', msg);
+    },
     onFrame: (f) => {
       const counts = f.extra?.counts;
       if (!counts) return;
@@ -212,7 +219,13 @@ async function gameLogic() {
       }
     },
   });
-  document.addEventListener('visibilitychange', () => physics.setRunning(!document.hidden));
+  // Pause the worker pump on a hidden tab — but never re-START it once the game
+  // has ended (all lanes frozen), or a tab hide/show would resurrect the 60Hz
+  // pump on a static scene and never stop it again.
+  document.addEventListener('visibilitychange', () => {
+    if (Simulation.frozenLanes >= 4) return;
+    physics.setRunning(!document.hidden);
+  });
 
   await gsap.to(introStage, {
     pixi: { x: window.innerWidth + 1000 },
@@ -244,7 +257,7 @@ async function gameLogic() {
 
   introCanvas.style.display = 'none';
   introField.destroy();
-  introApp.destroy();
+  introWorld.destroy(); // removes the resize listener before destroying the app
 
   // The four house titles are already raining in (each LaneView staggers its
   // gem letters as it boots). Give them a beat to settle, drop the counters in

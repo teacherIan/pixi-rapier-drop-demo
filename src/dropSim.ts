@@ -88,6 +88,11 @@ export async function createDropSim(init: DropInit): Promise<SimSetup<null, Drop
     frameFloats += cap * 3;
   }
 
+  // Reused every fillFrame so the ~60Hz frame path allocates nothing (the counts
+  // array + wrapper are structured-cloned at post, so reusing them is safe).
+  const counts = new Array<number>(lanes.length).fill(0);
+  const frameFill = { extra: { counts } };
+
   const freezeExpired = (lane: Lane, now: number): void => {
     // Bodies spawn in time order, so everything before the cursor is already
     // frozen and everything after the first young body is younger still.
@@ -128,7 +133,6 @@ export async function createDropSim(init: DropInit): Promise<SimSetup<null, Drop
       }
     },
     fillFrame(out) {
-      const counts: number[] = [];
       for (let l = 0; l < lanes.length; l += 1) {
         const lane = lanes[l];
         const base = offsets[l];
@@ -138,9 +142,9 @@ export async function createDropSim(init: DropInit): Promise<SimSetup<null, Drop
           out[base + i * 3 + 1] = p.y;
           out[base + i * 3 + 2] = lane.bodies[i].rotation();
         }
-        counts.push(lane.bodies.length);
+        counts[l] = lane.bodies.length;
       }
-      return { extra: { counts } };
+      return frameFill;
     },
   };
 

@@ -115,7 +115,9 @@ export default class Simulation {
     if (Simulation.simulationsFinished >= 4) {
       outroCanvas.style.zIndex = '9999';
       outroCanvas.style.display = 'block';
-      OutroWorld.create(outroCanvas as HTMLCanvasElement, this.winningHouse);
+      OutroWorld.create(outroCanvas as HTMLCanvasElement, this.winningHouse).catch((err) => {
+        console.error('[drop] outro failed to build:', err);
+      });
     }
 
     setTimeout(() => {

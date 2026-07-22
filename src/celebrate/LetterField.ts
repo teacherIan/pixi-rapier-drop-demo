@@ -67,6 +67,8 @@ export class LetterField {
   private timers: number[] = [];
   private destroyed = false;
   private tickerFn = () => this.tick();
+  /** Aborted in destroy() to remove all pointer listeners at once. */
+  private pointerAbort = new AbortController();
 
   private constructor(
     private app: Application,
@@ -190,6 +192,7 @@ export class LetterField {
         y: ((e.clientY - rect.top) / rect.height) * this.app.screen.height,
       };
     };
+    const signal = this.pointerAbort.signal;
     el.addEventListener('pointerdown', (e) => {
       if (this.destroyed) return;
       const { x, y } = toWorld(e);
@@ -212,20 +215,21 @@ export class LetterField {
       const c = Math.cos(rot), s = Math.sin(rot);
       const dx = x - p.x, dy = y - p.y;
       startLetterDrag(this.world, best, c * dx + s * dy, -s * dx + c * dy, x, y);
-    }, { passive: true });
+    }, { passive: true, signal });
     el.addEventListener('pointermove', (e) => {
       if (!this.world.drag) return;
       const { x, y } = toWorld(e);
       moveDrag(this.world, x, y);
-    }, { passive: true });
+    }, { passive: true, signal });
     const end = () => releaseDrag(this.world);
-    el.addEventListener('pointerup', end, { passive: true });
-    el.addEventListener('pointercancel', end, { passive: true });
+    el.addEventListener('pointerup', end, { passive: true, signal });
+    el.addEventListener('pointercancel', end, { passive: true, signal });
   }
 
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.pointerAbort.abort(); // remove the canvas pointer listeners
     for (const t of this.timers) window.clearTimeout(t);
     this.app.ticker.remove(this.tickerFn);
     releaseDrag(this.world);

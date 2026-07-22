@@ -3,6 +3,7 @@ import { Application, Assets, Container, Sprite, DisplacementFilter } from 'pixi
 export default class IntroWorld {
   private app!: Application;
   private stage!: Container;
+  private onResize?: () => void;
 
   private constructor() {}
 
@@ -39,6 +40,16 @@ export default class IntroWorld {
     return this.app;
   }
 
+  /** Tear down the intro: remove the window resize listener (which references
+   * the app and would throw once destroyed) BEFORE destroying the Application. */
+  public destroy(): void {
+    if (this.onResize) {
+      window.removeEventListener('resize', this.onResize);
+      this.onResize = undefined;
+    }
+    this.app.destroy(true, { children: true });
+  }
+
   public async createDisplacementSprite() {
     const smallScreen = window.innerWidth < 1000 ? -300 : 0;
     const sheet = await Assets.load('/sprites.json');
@@ -64,14 +75,16 @@ export default class IntroWorld {
       scale: { x: 256, y: 256 },
     });
 
-    window.addEventListener('resize', () => {
+    this.onResize = () => {
       setTimeout(() => {
+        if (!this.app.renderer) return; // destroyed while the debounce was pending
         backgroundSprite.width = this.app.screen.height * 1.5;
         backgroundSprite.height = this.app.screen.height * 1.5;
         backgroundSprite.x = window.innerWidth / 2;
         backgroundSprite.y = window.innerHeight / 2;
       }, 100);
-    });
+    };
+    window.addEventListener('resize', this.onResize);
 
     backgroundSprite.filters = [displacementSpriteFilter];
 
