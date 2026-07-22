@@ -18,6 +18,6 @@
     "gsap": "^3.12.0",
     "pixi-filters": "^6.0.0",
     "pixi.js": "^8.17.1",
-    "rapier-on-worker": "file:../rapier-on-worker"
+    "rapier-on-worker": "github:teacherIan/rapier-on-worker#v0.1.0"
   }
 }
