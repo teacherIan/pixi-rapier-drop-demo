@@ -18,6 +18,7 @@ export class OutroWorld {
 
     world.app = new Application();
     await world.app.init({
+      textureGCActive: false, // pixi 8.19 pool double-return (see bubble-rapier-text 0.8.2)
       canvas: document.getElementById('outro-canvas') as HTMLCanvasElement,
       resizeTo: parent,
       width: window.innerWidth,

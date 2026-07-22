@@ -39,6 +39,7 @@ export default class PixiWorld {
 
     world.app = new Application();
     await world.app.init({
+      textureGCActive: false, // pixi 8.19 pool double-return (see bubble-rapier-text 0.8.2)
       canvas: parent,
       resizeTo: parent,
       width: window.innerWidth / 4,
