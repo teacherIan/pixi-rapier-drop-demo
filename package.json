@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@dimforge/rapier2d-compat": "^0.19.3",
-    "bubble-rapier-text": "github:teacherIan/bubble-rapier-text#v0.8.2",
+    "bubble-rapier-text": "github:teacherIan/bubble-rapier-text#v0.8.3",
     "gsap": "^3.15.0",
     "pixi-filters": "^6.1.5",
     "pixi.js": "^8.19.0",
-    "rapier-on-worker": "github:teacherIan/rapier-on-worker#v0.1.0"
+    "rapier-on-worker": "github:teacherIan/rapier-on-worker#v0.1.1"
   }
 }
