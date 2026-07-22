@@ -1,4 +1,7 @@
 import { Application, Assets, Container, Sprite, Text, TextStyle, DisplacementFilter } from 'pixi.js';
+import { LetterField } from '../celebrate/LetterField';
+import { gemTextStyle, HOUSE_COLORS } from '../celebrate/gemStyle';
+import { winnerLayout } from '../celebrate/layouts';
 import { AsciiFilter } from 'pixi-filters';
 import { gsap } from '../gsapSetup';
 
@@ -28,6 +31,7 @@ export class OutroWorld {
 
     await world.createBackgroundImage();
     world.createConfetti();
+    await world.createWinnerText();
 
     return world;
   }
@@ -67,6 +71,21 @@ export class OutroWorld {
 
     this.app.ticker.add(() => {
       displacementSprite.x += 1;
+    });
+  }
+
+  // WINNER + the house's name, as that house's gem letters — they stagger in
+  // from off-screen and settle over the ascii-melted gem while the confetti
+  // falls. Draggable: the kiosk crowd can fling the word around.
+  private async createWinnerText() {
+    const house = this.img.toLowerCase() as keyof typeof HOUSE_COLORS;
+    const color = HOUSE_COLORS[house] ?? 0xffffff;
+    this.app.stage.sortableChildren = true;
+    await LetterField.create(this.app, this.app.stage, winnerLayout(this.img.toUpperCase()), {
+      styleFor: gemTextStyle,
+      palette: [color],
+      staggerMs: 110,
+      interactive: true,
     });
   }
 

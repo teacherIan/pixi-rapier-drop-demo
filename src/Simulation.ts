@@ -87,7 +87,7 @@ export default class Simulation {
         }
 
         if (this.winningHouse === this.App.getName()) {
-          gsap.to(this.App.getTitleText(), {
+          gsap.to(this.App.getTitleContainer(), {
             pixi: { alpha: 0.1 },
             duration: 5,
           });

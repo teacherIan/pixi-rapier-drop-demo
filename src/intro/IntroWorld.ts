@@ -1,5 +1,4 @@
-import { Application, Assets, Container, Sprite, Text, TextStyle, DisplacementFilter } from 'pixi.js';
-import { gsap } from '../gsapSetup';
+import { Application, Assets, Container, Sprite, DisplacementFilter } from 'pixi.js';
 
 export default class IntroWorld {
   private app!: Application;
@@ -37,46 +36,6 @@ export default class IntroWorld {
 
   public getApp(): Application {
     return this.app;
-  }
-
-  public createText(text: string) {
-    const style = new TextStyle({
-      fontFamily: 'Caveat',
-      fontWeight: '700',
-      fontSize: window.innerWidth / 6,
-      fill: '#101935',
-      stroke: { color: '#ff6a00', width: 6 },
-      dropShadow: {
-        color: '#ff4500',
-        blur: 35,
-        angle: 0,
-        distance: 0,
-        alpha: 1,
-      },
-      letterSpacing: 5,
-      padding: 40,
-    });
-    const richText = new Text({ text, style });
-    richText.anchor.set(0.5);
-    richText.x = this.app.screen.width / 2;
-    richText.y = this.app.screen.height / 2;
-    richText.scale.set(1.1, 1.2);
-
-    gsap.to(richText.scale, {
-      x: 1.15,
-      y: 1.25,
-      duration: 1.5,
-      ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1,
-    });
-
-    window.addEventListener('resize', () => {
-      richText.x = this.app.screen.width / 2;
-      richText.y = this.app.screen.height / 2;
-    });
-
-    return richText;
   }
 
   public async createDisplacementSprite() {

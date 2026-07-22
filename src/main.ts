@@ -1,6 +1,10 @@
 import './style.css';
+import 'bubble-rapier-text/styles.css'; // registers the Cherry Bomb One face
 import PixiWorld from './PixiWorld';
-import { Application, Assets, Container, Spritesheet, Text } from 'pixi.js';
+import { Application, Assets, Container, Spritesheet } from 'pixi.js';
+import { LetterField } from './celebrate/LetterField';
+import { gemTextStyle, HOUSE_PALETTE, warmBubbleFace } from './celebrate/gemStyle';
+import { centerWord } from './celebrate/layouts';
 import * as RAPIER from '@dimforge/rapier2d-compat';
 import { PhysisWorld } from './Rapier';
 import Simulation from './Simulation';
@@ -28,7 +32,7 @@ let rubyMaxAmountDB: number = 0;
 let amberMaxAmountDB: number = 0;
 let pearlMaxAmountDB: number = 0;
 let sapphireMaxAmountDB: number = 0;
-let text: Text;
+let introField: LetterField;
 let winningAmount: number;
 let winningHouse: string;
 let gameSpeed = 150;
@@ -36,7 +40,11 @@ const audio: HTMLAudioElement = new Audio('/epic-cinematic-trailer-113981.mp3');
 
 async function getRandomData() {
   const smallScreen = window.innerWidth < 1000 ? -250 : 0;
-  text.text = 'START';
+  // Let LOADING finish its staggered rain and sit a beat before it morphs:
+  // the shared letters (T, A...) then glide across, the rest bonk away solid,
+  // and the missing ones stagger in.
+  await new Promise((resolve) => setTimeout(resolve, 2200));
+  introField.morphTo(centerWord('START'));
   rubyMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
   amberMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
   pearlMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
@@ -74,14 +82,20 @@ async function startIntroScene() {
   introWorld = await IntroWorld.create(introCanvas as HTMLCanvasElement);
   introStage = introWorld.getStage();
   introApp = introWorld.getApp();
+  introStage.sortableChildren = true;
 
-  text = introWorld.createText('LOADING');
-  introStage.addChild(text);
-  text.zIndex = 100;
+  // LOADING rains in letter by letter — gem bubble glyphs cycling all four
+  // house colours, draggable while everyone waits.
+  introField = await LetterField.create(introApp, introStage, centerWord('LOADING'), {
+    styleFor: gemTextStyle,
+    palette: HOUSE_PALETTE,
+    staggerMs: 80,
+    interactive: true,
+  });
 }
 
 async function loader() {
-  await Assets.load('/ArcadeClassic.ttf');
+  await warmBubbleFace(); // canvas text never triggers @font-face on its own
   await Assets.load('/SSIS__logo.png');
   sheet = await Assets.load('/sprites.json');
   await Assets.load('/displacement_map_repeat.jpg');
@@ -157,7 +171,10 @@ async function gameLogic() {
   audio.play();
   if (clicked) return;
   clicked = true;
-  text.text = `DROP!`;
+  // START morphs to DROP! — then the letters fall off the bottom as the whole
+  // intro stage slides away.
+  introField.morphTo(centerWord('DROP!'));
+  window.setTimeout(() => introField.exit(), 1400);
   if (introCanvas.requestFullscreen) {
     introCanvas.requestFullscreen();
   }
@@ -240,80 +257,16 @@ async function gameLogic() {
   );
 
   introCanvas.style.display = 'none';
+  introField.destroy();
   introApp.destroy();
 
-  const timeline = gsap.timeline();
-  timeline.to(ruby.App.titleText, {
-    pixi: {
-      scaleY: window.innerWidth < 1000 ? 0.9 : 1.3,
-      scaleX:
-        window.innerWidth < 1600
-          ? window.innerWidth < 1000
-            ? 0.35
-            : 1.4
-          : 1.5,
-    },
-    duration: 1.7,
-    ease: 'bounce',
-  });
-  timeline.to(amber.App.titleText, {
-    pixi: {
-      scaleY: window.innerWidth < 1000 ? 0.9 : 1.3,
-      scaleX:
-        window.innerWidth < 1600
-          ? window.innerWidth < 1000
-            ? 0.3
-            : 1.1
-          : 1.2,
-    },
-    duration: 1.7,
-    ease: 'bounce',
-  });
-  timeline.to(pearl.App.titleText, {
-    pixi: {
-      scaleY: window.innerWidth < 1000 ? 0.9 : 1.3,
-      scaleX:
-        window.innerWidth < 1600
-          ? window.innerWidth < 1000
-            ? 0.3
-            : 1.1
-          : 1.2,
-    },
-    duration: 1.7,
-    ease: 'bounce',
-  });
-  timeline.to(sapphire.App.titleText, {
-    pixi: {
-      scaleY: window.innerWidth < 1000 ? 0.9 : 1.3,
-      scaleX:
-        window.innerWidth < 1600
-          ? window.innerWidth < 1000
-            ? 0.2
-            : 0.7
-          : 0.8,
-    },
-    duration: 1.7,
-    ease: 'bounce',
-  });
-
-  await timeline.play();
+  // The four house titles are already raining in (each PixiWorld staggers its
+  // gem letters as it boots). Give them a beat to settle, drop the counters in
+  // from the top of each lane, then open the gates.
+  await new Promise((resolve) => setTimeout(resolve, 1900));
+  for (const sim of [ruby, amber, pearl, sapphire]) sim.App.enterCounter();
+  await new Promise((resolve) => setTimeout(resolve, 700));
   Simulation.started = true;
-
-  gsap.to(
-    [
-      sapphire.App.getCounterText(),
-      ruby.App.getCounterText(),
-      pearl.App.getCounterText(),
-      amber.App.getCounterText(),
-    ],
-    {
-      pixi: {
-        scaleX: window.innerWidth < 1600 ? 0.9 : 1,
-        scaleY: 2,
-      },
-      duration: 10,
-    }
-  );
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

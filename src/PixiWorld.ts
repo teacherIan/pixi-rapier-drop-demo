@@ -1,4 +1,8 @@
-import { Application, Container, Sprite, Text, TextStyle, Graphics, Spritesheet } from 'pixi.js';
+import { Application, Container, Sprite, Graphics, Spritesheet } from 'pixi.js';
+import { LetterField } from './celebrate/LetterField';
+import { GemDigitRow } from './celebrate/GemDigitRow';
+import { gemTextStyle } from './celebrate/gemStyle';
+import { houseTitle } from './celebrate/layouts';
 
 export default class PixiWorld {
   private app!: Application;
@@ -6,21 +10,18 @@ export default class PixiWorld {
   private texture: string;
   private ballSize: number;
   private title: string;
-  private color: number;
   private sheet: Spritesheet;
-  private counterText!: Text;
-  public titleText!: Text;
+  private counterRow!: GemDigitRow;
+  public titleField!: LetterField;
   private particleContainer!: Container;
 
   private constructor(
     texture: string,
     ballSize: number,
     name: string,
-    color: number,
     sheet: Spritesheet
   ) {
     this.title = name;
-    this.color = color;
     this.texture = texture;
     this.ballSize = ballSize;
     this.sheet = sheet;
@@ -34,7 +35,7 @@ export default class PixiWorld {
     color: number,
     sheet: Spritesheet
   ): Promise<PixiWorld> {
-    const world = new PixiWorld(texture, ballSize, name, color, sheet);
+    const world = new PixiWorld(texture, ballSize, name, sheet);
 
     world.app = new Application();
     await world.app.init({
@@ -50,12 +51,27 @@ export default class PixiWorld {
     });
 
     world.stage = world.app.stage;
+    world.stage.sortableChildren = true;
     world.particleContainer = new Container();
     world.app.stage.addChild(world.particleContainer);
-    world.titleText = world.createTitleText();
     world.createLeftWall();
     world.createRightWall();
-    world.counterText = world.createCounterText();
+
+    // The house name as GEM bubble letters — real physics bodies that stagger
+    // in from off-screen one by one and settle high in the lane.
+    world.titleField = await LetterField.create(world.app, world.stage, houseTitle(name.toUpperCase()), {
+      styleFor: gemTextStyle,
+      palette: [color],
+      staggerMs: 90,
+    });
+
+    // The rolling point counter as gem digits in fixed cells; it drops in
+    // (staggered, with a candy overshoot) once the race starts.
+    world.counterRow = new GemDigitRow(color, window.innerWidth < 1000 ? 44 : 110);
+    world.counterRow.container.position.set(window.innerWidth / 8, window.innerHeight - window.innerHeight / 8);
+    world.counterRow.container.zIndex = 600;
+    world.app.stage.addChild(world.counterRow.container);
+    world.app.ticker.add((t) => world.counterRow.tick(t.deltaMS));
 
     return world;
   }
@@ -79,47 +95,6 @@ export default class PixiWorld {
     return sphere;
   }
 
-  private createTitleText(): Text {
-    const style = new TextStyle({
-      fontFamily: 'ARCADECLASSIC',
-      fontSize: 120,
-      align: 'center',
-      fill: this.color,
-      stroke: { color: '#000000', width: 6 },
-    });
-    const textSprite = new Text({ text: this.title, style });
-
-    textSprite.x = window.innerWidth / 8;
-    textSprite.y = window.innerHeight / 8;
-    textSprite.anchor.set(0.5);
-    textSprite.zIndex = 0;
-    textSprite.scale.set(0, 0);
-    textSprite.roundPixels = true;
-
-    this.app.stage.addChild(textSprite);
-    return textSprite;
-  }
-
-  private createCounterText(): Text {
-    const style = new TextStyle({
-      fontFamily: 'ARCADECLASSIC',
-      fontSize: window.innerWidth < 1000 ? 50 : 150,
-      align: 'center',
-      fill: 0xffffff,
-      stroke: { color: '#000000', width: 4 },
-    });
-    const textSprite = new Text({ text: '0', style });
-
-    textSprite.x = window.innerWidth / 8;
-    textSprite.y = window.innerHeight - window.innerHeight / 8;
-    textSprite.anchor.set(0.5);
-    textSprite.zIndex = 100;
-    textSprite.scale.set(0, 0);
-
-    this.app.stage.addChild(textSprite);
-    return textSprite;
-  }
-
   private createLeftWall() {
     const wall = new Graphics();
     wall.rect(0, 0, 1, window.innerHeight).fill(0x000000);
@@ -137,11 +112,12 @@ export default class PixiWorld {
   }
 
   public updateCounterText(num: number) {
-    let text = num.toString();
-    while (text.length < 4) {
-      text = '0' + text;
-    }
-    this.counterText.text = text;
+    this.counterRow.set(num.toString().padStart(4, '0'));
+  }
+
+  /** Drop the counter digits in from the top of the lane. */
+  public enterCounter() {
+    this.counterRow.enter(window.innerHeight - window.innerHeight / 8 + 140);
   }
 
   public resize() {
@@ -149,14 +125,11 @@ export default class PixiWorld {
   }
 
   public getName(): string {
-    return this.titleText.text;
+    return this.title;
   }
 
-  public getCounterText(): Text {
-    return this.counterText;
-  }
-
-  public getTitleText(): Text {
-    return this.titleText;
+  /** The title letters' container — the winner fade targets this. */
+  public getTitleContainer(): Container {
+    return this.titleField.container;
   }
 }
