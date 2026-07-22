@@ -6,7 +6,8 @@ import { LetterField } from './celebrate/LetterField';
 import { gemTextStyle, HOUSE_PALETTE, warmBubbleFace } from './celebrate/gemStyle';
 import { centerWord } from './celebrate/layouts';
 import * as RAPIER from '@dimforge/rapier2d-compat';
-import { PhysisWorld } from './Rapier';
+import { createSimClient } from 'rapier-on-worker';
+import type { DropCommand, DropExtra, DropInit, DropLayout, DropPhysics } from './dropSim';
 import Simulation from './Simulation';
 import IntroWorld from './intro/IntroWorld';
 import { gsap } from './gsapSetup';
@@ -27,6 +28,9 @@ let ruby: Simulation,
   amber: Simulation,
   pearl: Simulation,
   sapphire: Simulation;
+let physics: DropPhysics;
+/** Lane order: Ruby, Amber, Pearl, Sapphire — the frame-dispatch fan-out. */
+const sims: (Simulation | null)[] = [null, null, null, null];
 
 let rubyMaxAmountDB: number = 0;
 let amberMaxAmountDB: number = 0;
@@ -186,6 +190,32 @@ async function gameLogic() {
 
   introCanvas.style.zIndex = '-1';
 
+  // Physics lives OFF the main thread: one worker hosts all four lane worlds
+  // (rapier-on-worker harness). Created here so its WASM init overlaps the
+  // 10s intro slide; frames are capacity-sized so spawning never re-layouts.
+  const capacities = [rubyMaxAmountDB, amberMaxAmountDB, pearlMaxAmountDB, sapphireMaxAmountDB];
+  let laneOffsets: number[] = [];
+  physics = createSimClient<DropInit, null, DropCommand, DropLayout, DropExtra>({
+    worker: new Worker(new URL('./dropSim.worker.ts', import.meta.url), { type: 'module' }),
+    init: {
+      fullWidth: window.innerWidth,
+      height: window.innerHeight,
+      ballSize,
+      capacities,
+    },
+    onLayout: (l) => {
+      laneOffsets = l.offsets;
+    },
+    onFrame: (f) => {
+      const counts = f.extra?.counts;
+      if (!counts) return;
+      for (let l = 0; l < sims.length; l += 1) {
+        sims[l]?.applyFrame(f.positions, laneOffsets[l] ?? 0, counts[l] ?? 0);
+      }
+    },
+  });
+  document.addEventListener('visibilitychange', () => physics.setRunning(!document.hidden));
+
   await gsap.to(introStage, {
     pixi: { x: window.innerWidth + 1000 },
     duration: 10,
@@ -201,7 +231,8 @@ async function gameLogic() {
       0xc11c22,
       sheet
     ),
-    new PhysisWorld(ballSize),
+    physics,
+    0,
     rubyMaxAmountDB,
     winningHouse,
     gameSpeed,
@@ -217,7 +248,8 @@ async function gameLogic() {
       0xe46725,
       sheet
     ),
-    new PhysisWorld(ballSize),
+    physics,
+    1,
     amberMaxAmountDB,
     winningHouse,
     gameSpeed,
@@ -233,7 +265,8 @@ async function gameLogic() {
       0xffffff,
       sheet
     ),
-    new PhysisWorld(ballSize),
+    physics,
+    2,
     pearlMaxAmountDB,
     winningHouse,
     gameSpeed,
@@ -249,12 +282,18 @@ async function gameLogic() {
       0x1271b5,
       sheet
     ),
-    new PhysisWorld(ballSize),
+    physics,
+    3,
     sapphireMaxAmountDB,
     winningHouse,
     gameSpeed,
     maxMultiplier
   );
+
+  sims[0] = ruby;
+  sims[1] = amber;
+  sims[2] = pearl;
+  sims[3] = sapphire;
 
   introCanvas.style.display = 'none';
   introField.destroy();
