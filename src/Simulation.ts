@@ -1,5 +1,6 @@
-import { Sprite } from 'pixi.js';
-import PixiWorld from './PixiWorld';
+import { Particle } from 'pixi.js';
+import GameStage from './GameStage';
+import LaneView from './LaneView';
 import { gsap } from './gsapSetup';
 import { OutroWorld } from './outro/OutroWorld';
 import type { DropPhysics } from './dropSim';
@@ -12,10 +13,11 @@ export default class Simulation {
   public static started: boolean = false;
   public static simulationsFinished: number = 0;
   public static frozenLanes: number = 0;
-  private app: PixiWorld;
+  private stage: GameStage;
+  private view: LaneView;
   private physics: DropPhysics;
   private lane: number;
-  private sprites: Sprite[] = [];
+  private particles: Particle[] = [];
   private counter: number;
   private interval: number;
   private sphereCounter: number = 0;
@@ -23,7 +25,8 @@ export default class Simulation {
   private winningHouse: string;
 
   constructor(
-    app: PixiWorld,
+    stage: GameStage,
+    view: LaneView,
     physics: DropPhysics,
     lane: number,
     counter: number,
@@ -31,12 +34,14 @@ export default class Simulation {
     gameSpeed: number,
     maxMultiplier: number
   ) {
+    this.stage = stage;
+    this.view = view;
     this.counter = counter;
-    this.app = app;
     this.physics = physics;
     this.lane = lane;
     this.finished = false;
     this.winningHouse = winningHouse;
+    void this.stage;
 
     this.interval = window.setInterval(() => {
       if (!Simulation.started) {
@@ -61,7 +66,7 @@ export default class Simulation {
         size
       );
       this.sphereCounter += size;
-      this.app.updateCounterText(this.sphereCounter);
+      this.view.updateCounterText(this.sphereCounter);
       if (this.sphereCounter >= this.counter) {
         clearInterval(this.interval);
         this.finish();
@@ -69,47 +74,42 @@ export default class Simulation {
     }, gameSpeed);
   }
 
-  /** The physics body lives in the worker; here we only mint the sprite. It
-   * stays hidden until the worker's frames cover its index. */
+  /** Mint the render particle at its (off-screen) spawn point AND tell the
+   * worker to create the matching physics body; the worker's frames then drive
+   * the particle. Both must happen in the same body order so the frame's
+   * per-body slot lines up with `particles[i]`. */
   public createSphere(x: number, y: number, size: number) {
-    const sprite = this.app.createSphere(size);
-    sprite.visible = false;
-    sprite.position.set(x, y);
-    this.app.ParticleContainer.addChild(sprite);
-    this.sprites.push(sprite);
+    this.particles.push(this.view.spawnParticle(x, y, size));
     this.physics.sendCommand({ kind: 'spawn', lane: this.lane, x, y, size });
   }
 
-  /** Copy this lane's region of a worker frame onto the sprites. `positions`
-   * is only valid during the call (the buffer is recycled) — we consume it
-   * synchronously, writing straight into the sprites. */
-  public applyFrame(positions: Float32Array, offset: number, count: number) {
-    const n = Math.min(count, this.sprites.length);
+  /** Write this lane's region of a worker frame straight onto the particles.
+   * Frames arrive at ~45Hz (faster than the render), so a direct write is both
+   * the freshest and the cheapest option — no per-render interpolation, which
+   * only pays off once the render outruns delivery. `positions` is valid only
+   * during the call (the buffer is recycled). */
+  public setSnapshot(positions: Float32Array, offset: number, count: number) {
+    const n = Math.min(count, this.particles.length);
     for (let i = 0; i < n; i += 1) {
-      const sprite = this.sprites[i];
-      sprite.visible = true;
-      sprite.position.set(positions[offset + i * 3], positions[offset + i * 3 + 1]);
-      sprite.rotation = positions[offset + i * 3 + 2];
+      const p = this.particles[i];
+      p.x = positions[offset + i * 3];
+      p.y = positions[offset + i * 3 + 1];
+      // slot i*3+2 is rotation — unused (orbs render with a fixed spawn spin).
     }
   }
 
   /** All points delivered: fade the losers, raise the outro on the last lane,
-   * and — after the same 12s linger the old version used — freeze this lane's
-   * world in the worker (and the whole pump once every lane is done). */
+   * and — after the same 12s linger — freeze this lane's world in the worker
+   * (and the whole pump once every lane is done). */
   private finish() {
     if (this.finished) return;
     this.finished = true;
     Simulation.simulationsFinished++;
 
-    if (this.winningHouse != this.App.getName()) {
-      gsap.to(this.App.Stage, { pixi: { alpha: 0.1 }, duration: 5 });
-    }
-
-    if (this.winningHouse === this.App.getName()) {
-      gsap.to(this.App.getTitleContainer(), {
-        pixi: { alpha: 0.1 },
-        duration: 5,
-      });
+    if (this.winningHouse != this.view.getName()) {
+      this.view.fadeLane(0.1, 5);
+    } else {
+      gsap.to(this.view.getTitleContainer(), { pixi: { alpha: 0.1 }, duration: 5 });
     }
 
     if (Simulation.simulationsFinished >= 4) {
@@ -125,9 +125,5 @@ export default class Simulation {
       // outro doesn't need 60Hz physics frames of a still scene.
       if (Simulation.frozenLanes >= 4) this.physics.setRunning(false);
     }, 12000);
-  }
-
-  public get App(): PixiWorld {
-    return this.app;
   }
 }

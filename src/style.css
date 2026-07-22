@@ -18,12 +18,10 @@
 }
 
 .canvas {
-  /* border: 1px black solid; */
+  /* One full-width canvas for the whole board (was four 25% canvases). */
   height: 100vh;
-  width: 25%;
-
+  width: 100vw;
   z-index: 2000;
-
 }
 
 #intro-canvas {

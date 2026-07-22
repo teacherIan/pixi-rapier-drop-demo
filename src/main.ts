@@ -1,6 +1,7 @@
 import './style.css';
 import 'bubble-rapier-text/styles.css'; // registers the Cherry Bomb One face
-import PixiWorld from './PixiWorld';
+import GameStage from './GameStage';
+import LaneView from './LaneView';
 import { Application, Assets, Container, Spritesheet } from 'pixi.js';
 import { LetterField } from './celebrate/LetterField';
 import { gemTextStyle, HOUSE_PALETTE, warmBubbleFace } from './celebrate/gemStyle';
@@ -24,13 +25,10 @@ let sheet: Spritesheet;
 let introWorld: IntroWorld;
 let introStage: Container;
 let introApp: Application;
-let ruby: Simulation,
-  amber: Simulation,
-  pearl: Simulation,
-  sapphire: Simulation;
 let physics: DropPhysics;
 /** Lane order: Ruby, Amber, Pearl, Sapphire — the frame-dispatch fan-out. */
 const sims: (Simulation | null)[] = [null, null, null, null];
+const views: (LaneView | null)[] = [null, null, null, null];
 
 let rubyMaxAmountDB: number = 0;
 let amberMaxAmountDB: number = 0;
@@ -44,10 +42,12 @@ const audio: HTMLAudioElement = new Audio('/epic-cinematic-trailer-113981.mp3');
 
 async function getRandomData() {
   const smallScreen = window.innerWidth < 1000 ? -250 : 0;
-  // Let LOADING finish its staggered rain and sit a beat before it morphs:
-  // the shared letters (T, A...) then glide across, the rest bonk away solid,
-  // and the missing ones stagger in.
-  await new Promise((resolve) => setTimeout(resolve, 2200));
+  // Hold LOADING long enough to be clearly read before it morphs. The letters
+  // rain in and settle on springs (~1.3s), so the readable window is the dwell
+  // MINUS the entrance — 3500ms leaves ~2s of settled, readable "LOADING"
+  // before the shared letters (T, A...) glide across into START and the rest
+  // bonk away. (Was 2200ms, which left the word barely legible before morphing.)
+  await new Promise((resolve) => setTimeout(resolve, 3500));
   introField.morphTo(centerWord('START'));
   rubyMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
   amberMaxAmountDB = Math.floor(Math.random() * 3000) + 1000 + smallScreen;
@@ -175,18 +175,16 @@ async function gameLogic() {
   audio.play();
   if (clicked) return;
   clicked = true;
-  // START morphs to DROP! — then the letters fall off the bottom as the whole
-  // intro stage slides away.
+  // START morphs to DROP! — hold it readable, THEN let the letters fall off the
+  // bottom as the whole intro stage slides away. 2200ms (was 1400) leaves DROP!
+  // legible after its morph settles instead of exiting mid-morph.
   introField.morphTo(centerWord('DROP!'));
-  window.setTimeout(() => introField.exit(), 1400);
+  window.setTimeout(() => introField.exit(), 2200);
   if (introCanvas.requestFullscreen) {
     introCanvas.requestFullscreen();
   }
 
-  dropContainer.innerHTML = `<canvas class="canvas" id="canvasA"></canvas>
-<canvas class="canvas" id="canvasB"></canvas>
-<canvas class="canvas" id="canvasC"></canvas>
-<canvas class="canvas" id="canvasD"></canvas>`;
+  dropContainer.innerHTML = `<canvas class="canvas" id="game-canvas"></canvas>`;
 
   introCanvas.style.zIndex = '-1';
 
@@ -210,7 +208,7 @@ async function gameLogic() {
       const counts = f.extra?.counts;
       if (!counts) return;
       for (let l = 0; l < sims.length; l += 1) {
-        sims[l]?.applyFrame(f.positions, laneOffsets[l] ?? 0, counts[l] ?? 0);
+        sims[l]?.setSnapshot(f.positions, laneOffsets[l] ?? 0, counts[l] ?? 0);
       }
     },
   });
@@ -222,88 +220,37 @@ async function gameLogic() {
     ease: 'expo.in',
   });
 
-  ruby = new Simulation(
-    await PixiWorld.create(
-      document.getElementById('canvasA') as HTMLCanvasElement,
-      'Orb_08.png',
-      ballSize,
-      'Ruby',
-      0xc11c22,
-      sheet
-    ),
-    physics,
-    0,
-    rubyMaxAmountDB,
-    winningHouse,
-    gameSpeed,
-    maxMultiplier
+  // ONE WebGL context for the whole board — lanes are sub-containers, and the
+  // bubble letters live in full-screen space (free to fly across the board
+  // instead of being clipped to a 25%-wide box).
+  const stage = await GameStage.create(
+    document.getElementById('game-canvas') as HTMLCanvasElement,
+    4
   );
 
-  amber = new Simulation(
-    await PixiWorld.create(
-      document.getElementById('canvasB') as HTMLCanvasElement,
-      'Orb_09.png',
-      ballSize,
-      'Amber',
-      0xe46725,
-      sheet
-    ),
-    physics,
-    1,
-    amberMaxAmountDB,
-    winningHouse,
-    gameSpeed,
-    maxMultiplier
-  );
-
-  pearl = new Simulation(
-    await PixiWorld.create(
-      document.getElementById('canvasC') as HTMLCanvasElement,
-      'Orb_20.png',
-      ballSize,
-      'Pearl',
-      0xffffff,
-      sheet
-    ),
-    physics,
-    2,
-    pearlMaxAmountDB,
-    winningHouse,
-    gameSpeed,
-    maxMultiplier
-  );
-
-  sapphire = new Simulation(
-    await PixiWorld.create(
-      document.getElementById('canvasD') as HTMLCanvasElement,
-      'Orb_11.png',
-      ballSize,
-      'Sapphire',
-      0x1271b5,
-      sheet
-    ),
-    physics,
-    3,
-    sapphireMaxAmountDB,
-    winningHouse,
-    gameSpeed,
-    maxMultiplier
-  );
-
-  sims[0] = ruby;
-  sims[1] = amber;
-  sims[2] = pearl;
-  sims[3] = sapphire;
+  const laneSpecs: Array<[string, string, number]> = [
+    ['Orb_08.png', 'Ruby', 0xc11c22],
+    ['Orb_09.png', 'Amber', 0xe46725],
+    ['Orb_20.png', 'Pearl', 0xffffff],
+    ['Orb_11.png', 'Sapphire', 0x1271b5],
+  ];
+  const targets = [rubyMaxAmountDB, amberMaxAmountDB, pearlMaxAmountDB, sapphireMaxAmountDB];
+  for (let i = 0; i < laneSpecs.length; i += 1) {
+    const [texture, name, color] = laneSpecs[i];
+    const view = await LaneView.create(stage, i, laneSpecs.length, texture, name, color, sheet, ballSize);
+    views[i] = view;
+    sims[i] = new Simulation(stage, view, physics, i, targets[i], winningHouse, gameSpeed, maxMultiplier);
+  }
 
   introCanvas.style.display = 'none';
   introField.destroy();
   introApp.destroy();
 
-  // The four house titles are already raining in (each PixiWorld staggers its
+  // The four house titles are already raining in (each LaneView staggers its
   // gem letters as it boots). Give them a beat to settle, drop the counters in
   // from the top of each lane, then open the gates.
   await new Promise((resolve) => setTimeout(resolve, 1900));
-  for (const sim of [ruby, amber, pearl, sapphire]) sim.App.enterCounter();
+  for (const view of views) view?.enterCounter();
   await new Promise((resolve) => setTimeout(resolve, 700));
   Simulation.started = true;
 }

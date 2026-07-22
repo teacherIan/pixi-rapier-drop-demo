@@ -41,11 +41,15 @@ export interface DropExtra {
   counts: number[];
 }
 
-/** The game's historic per-frame timestep. The old main-thread loop stepped
- * ~0.1 sim-seconds once per rendered frame (a deliberate 6x time scale that
- * makes 9.81-gravity read right in pixel space); the harness pumps a fixed
- * ~60Hz, so keeping 0.1 per step preserves the exact feel. */
-const STEP_S = 0.1;
+/** On-screen gravity in px/s². The old main-thread loop stepped world.timestep
+ * = deltaTime*0.1 once per rendered frame — a 6x time warp (0.1 game-s per
+ * 1/60 real-s) over a gentle 9.81 gravity. Warping time by k scales visible
+ * acceleration by k², so the OLD balls fell at 9.81 * 6² ≈ 353 px/s². We now
+ * step the world at the harness's real fixed dt (1/60) and bake that 353 in
+ * directly: identical fall speed, but small per-step motion instead of 0.1s
+ * leaps, so balls no longer jump ~70-110px between frames and dense piles
+ * solve stably. */
+const GRAVITY = 9.81 * 36;
 /** Bodies older than this become Fixed — the historic broad-phase relief. */
 const FREEZE_AFTER_MS = 8000;
 
@@ -64,7 +68,7 @@ export async function createDropSim(init: DropInit): Promise<SimSetup<null, Drop
   const { fullWidth, height, ballSize } = init;
 
   const makeLane = (capacity: number): Lane => {
-    const world = new RAPIER.World(new RAPIER.Vector2(0.0, 9.81));
+    const world = new RAPIER.World(new RAPIER.Vector2(0.0, GRAVITY));
     // Identical geometry to the old PhysisWorld (lane-local coordinates).
     const floor = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(fullWidth / 2, height + 100));
     world.createCollider(RAPIER.ColliderDesc.cuboid(fullWidth, 100), floor);
@@ -114,11 +118,11 @@ export async function createDropSim(init: DropInit): Promise<SimSetup<null, Drop
       return null; // frame shape never changes — capacity-sized regions
     },
     beginTick() {},
-    step() {
+    step(dt) {
       const now = performance.now();
       for (const lane of lanes) {
         if (lane.frozen) continue;
-        lane.world.timestep = STEP_S;
+        lane.world.timestep = dt;
         lane.world.step();
         freezeExpired(lane, now);
       }

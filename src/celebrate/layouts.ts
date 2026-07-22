@@ -38,6 +38,23 @@ export function houseTitle(word: string): LayoutStrategy {
   });
 }
 
+/** A house title over its lane, but laid out in the FULL-screen context so the
+ * letters can fly across the whole board instead of being clipped to a lane
+ * box. `lineXs` centres the word on the lane; the width budget is a lane's
+ * share of the viewport so the word fits its column. */
+export function laneTitle(word: string, laneIndex: number, laneCount: number): LayoutStrategy {
+  return createLineLayout({
+    lines: [{ text: word }],
+    measure,
+    baseSize: 96,
+    widthBudget: 0.86 / laneCount,
+    heightBudget: 0.9,
+    maxScale: 1.2,
+    lineXs: (vw) => [((laneIndex + 0.5) / laneCount) * vw],
+    lineYs: (vh) => [vh * 0.1],
+  });
+}
+
 /** The outro takeover: WINNER over the house's name. */
 export function winnerLayout(house: string): LayoutStrategy {
   return createLineLayout({
